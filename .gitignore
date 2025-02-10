@@ -1,12 +1,12 @@
 __pycache__/
 checkpoints/
-
+outputs/
 
 .env
 
 *.yaml
 *.yml
-
+*.out
 *.mp4
 *.mov
 *.png
