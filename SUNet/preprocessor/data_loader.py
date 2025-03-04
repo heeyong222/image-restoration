@@ -109,9 +109,49 @@ class DataLoaderValidation(Dataset):
     def __len__(self):
         return self.sizex
 
+    # def __getitem__(self, index):
+    #     index_ = index % self.sizex
+        
+
+    #     input_path = self.input_filenames[index_]
+    #     target_path = self.target_filenames[index_]
+
+    #     input_img = Image.open(input_path).convert('RGB')
+    #     target_img = Image.open(target_path).convert('RGB')
+
+    #     # Resize images to 256x256
+    #     # inp_img = inp_img.resize((512, 512), Image.BICUBIC)
+    #     # tar_img = tar_img.resize((512, 512), Image.BICUBIC)
+
+    #     # Validate on center crop
+    #     w, h = target_img.size
+    #     padw = self.patch_size - w if w < self.patch_size else 0
+    #     padh = self.patch_size - h if h < self.patch_size else 0
+
+    #     # Reflect Pad in case image is smaller than patch_size
+    #     if padw != 0 or padh != 0:
+    #         input_img = TF.pad(input_img, (0, 0, padw, padh), padding_mode='reflect')
+    #         target_img = TF.pad(target_img, (0, 0, padw, padh), padding_mode='reflect')
+
+    #     input_img = TF.to_tensor(input_img)
+    #     target_img = TF.to_tensor(target_img)
+
+    #     hh, ww = target_img.shape[1], target_img.shape[2]
+
+    #     rr = random.randint(0, hh - self.patch_size)
+    #     cc = random.randint(0, ww - self.patch_size)
+    #     # aug = random.randint(0, 8)
+
+    #     # Crop patch
+    #     input_img = input_img[:, rr:rr + self.patch_size, cc:cc + self.patch_size]
+    #     target_img = target_img[:, rr:rr + self.patch_size, cc:cc + self.patch_size]
+        
+    #     filename = os.path.splitext(os.path.split(target_path)[-1])[0]
+
+    #     return target_img, input_img, filename
+    
     def __getitem__(self, index):
         index_ = index % self.sizex
-        
 
         input_path = self.input_filenames[index_]
         target_path = self.target_filenames[index_]
@@ -119,16 +159,11 @@ class DataLoaderValidation(Dataset):
         input_img = Image.open(input_path).convert('RGB')
         target_img = Image.open(target_path).convert('RGB')
 
-        # Resize images to 256x256
-        # inp_img = inp_img.resize((512, 512), Image.BICUBIC)
-        # tar_img = tar_img.resize((512, 512), Image.BICUBIC)
-
-        # Validate on center crop
+        # 이미지 크기 패딩: 이미지 크기가 patch_size보다 작을 경우 반사 패딩 적용
         w, h = target_img.size
         padw = self.patch_size - w if w < self.patch_size else 0
         padh = self.patch_size - h if h < self.patch_size else 0
 
-        # Reflect Pad in case image is smaller than patch_size
         if padw != 0 or padh != 0:
             input_img = TF.pad(input_img, (0, 0, padw, padh), padding_mode='reflect')
             target_img = TF.pad(target_img, (0, 0, padw, padh), padding_mode='reflect')
@@ -136,16 +171,14 @@ class DataLoaderValidation(Dataset):
         input_img = TF.to_tensor(input_img)
         target_img = TF.to_tensor(target_img)
 
+        # Center crop: 중앙에서 patch_size 크기로 크롭
         hh, ww = target_img.shape[1], target_img.shape[2]
+        rr = (hh - self.patch_size) // 2
+        cc = (ww - self.patch_size) // 2
 
-        rr = random.randint(0, hh - self.patch_size)
-        cc = random.randint(0, ww - self.patch_size)
-        # aug = random.randint(0, 8)
-
-        # Crop patch
         input_img = input_img[:, rr:rr + self.patch_size, cc:cc + self.patch_size]
         target_img = target_img[:, rr:rr + self.patch_size, cc:cc + self.patch_size]
-        
+
         filename = os.path.splitext(os.path.split(target_path)[-1])[0]
 
         return target_img, input_img, filename

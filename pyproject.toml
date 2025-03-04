@@ -20,6 +20,7 @@ click = "^8.1.8"
 tensorboard = "^2.18.0"
 tensorboardx = "^2.6.2.2"
 pytorch-msssim = "^1.0.0"
+torchinfo = "^1.8.0"
 
 
 [build-system]

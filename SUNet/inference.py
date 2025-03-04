@@ -21,6 +21,7 @@ class InferenceRunner:
         
         model_path = config['inference']['model']
         input_folder = config['inference']['inputs']
+        gt_folder = config['inference']['gts']
         output_folder = config['inference']['outputs']
         
         os.makedirs(output_folder, exist_ok=True)
@@ -53,5 +54,12 @@ class InferenceRunner:
             inference_and_save(model, img_path, output_inference_path)
             
             shutil.copy2(img_path, output_original_path)
+            gt_path = os.path.join(gt_folder, filename)
+            if os.path.exists(gt_path):
+                output_gt_path = os.path.join(output_folder, f"{name}_gt{ext}")
+                shutil.copy2(gt_path, output_gt_path)
+                logger.info(f"Copied ground truth: {gt_path} to {output_gt_path}")
+            else:
+                logger.warning(f"Ground truth for {filename} not found in {gt_folder}")
             logger.debug(f"Saved inference: {output_inference_path} and original: {output_original_path}")
         
