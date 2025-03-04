@@ -33,6 +33,47 @@ class TrainWithPretrainedModel:
         with open(config_path, 'r') as f:
             return yaml.safe_load(f)
         
+    def load_encoder_weights(self, model, checkpoint_path):
+        """
+        사전 학습된 모델의 가중치 중 '인코더' 부분만 로드하고,
+        디코더 부분 (layers_up, up, norm_up 등)은 제외한다.
+        """
+        checkpoint = torch.load(checkpoint_path)
+        # 보통 checkpoint가 {'state_dict': ...} 형태이므로 우선 가져옴.
+        state_dict = checkpoint.get('state_dict', checkpoint)
+        model_dict = model.state_dict()
+
+        pretrained_encoder = {}
+
+        for key, value in state_dict.items():
+            # ----------------
+            # 1) 디코더 관련 키에 해당하면 스킵
+            #    (layers_up, norm_up, up, concat_back_dim, output 등)
+            # ----------------
+            if (
+                "layers_up" in key
+                or "norm_up" in key
+                or key.startswith("swin_unet.up")
+                or "concat_back_dim" in key
+                or key.startswith("swin_unet.output")
+            ):
+                # 디코더 부분으로 간주 -> 넘어감(skip)
+                continue
+            
+            # ----------------
+            # 2) 그 외(인코더라고 판단되는) 키만 반영
+            # ----------------
+            if key in model_dict and value.size() == model_dict[key].size():
+                pretrained_encoder[key] = value
+            else:
+                # shape mismatch나 모델에 없는 키는 무시
+                pass
+        
+        # 업데이트: 기존 모델 state dict에 선택된 encoder 가중치 덮어쓰기
+        model_dict.update(pretrained_encoder)
+        model.load_state_dict(model_dict)
+        print("Pretrained encoder weights loaded successfully.")
+        
     def load_partial_state_dict(self, model, checkpoint_path):
         """
         Loads a checkpoint into the model while only keeping matching layers.
@@ -76,6 +117,7 @@ class TrainWithPretrainedModel:
         EPOCHS = config['train']['epochs']
         model = SUNet_model(config)
         pretrained_model_path = config['train']['pretrain_path']
+        # self.load_encoder_weights(model, pretrained_model_path)
         self.load_partial_state_dict(model, pretrained_model_path)
         p_number = network_parameters(model)
         
@@ -206,7 +248,7 @@ class TrainWithPretrainedModel:
             ssim_val_rgb = torch.stack(ssim_val_rgb).mean().item()
             
             # validation L1 mean
-            avg_val_l1 = np.mean(val_losses_l1)
+            avg_val_l1 = np.mean(val_losses)
             writer.add_scalar('Loss/val_l1', avg_val_l1, epoch)
 
             val_psnrs.append(psnr_val_rgb)
